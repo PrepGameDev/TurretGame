@@ -23,6 +23,7 @@ package
 			
 		}
 		
+		//Kill the Cage and iterate the explosion sequence
 		public function Die():void {		
 			if(cage != null){
 				this.removeChild(cage)
