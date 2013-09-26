@@ -1,5 +1,6 @@
 package 
 {
+	//Import stuff
 	import flash.display.Sprite;
 	import flash.display.Stage;
 	import flash.events.Event;
@@ -15,48 +16,68 @@ package
 	 */
 	public class Main extends Sprite 
 	{
+		/////////////////////////////////
+		//// Public Variables /////////
+		////////////////////////////
+		
+		//The Turret
 		public var turret:Turret = new Turret
+		//The Center of the screen
 		public var centerX:Number
-		public var centerY:Number
-		public var stageRef:Stage
+		public var centerY:Number		
+		//A list of all items that need to enter the integration loop
 		public var physItems:Vector.<PhysItem> = new Vector.<PhysItem>
 		public var physItemsL:int = 0 
+		//A list of all the bullets
 		public var bullets:Vector.<Bullet> = new Vector.<Bullet>
 		public var bulletsL:int = 0
+		//A list of all the enemies
 		public var enemies:Vector.<Enemy> = new Vector.<Enemy>
 		public var enemiesL:int = 0
+		//True if the mouse is down
 		public var mouseIsDown:Boolean = false
-		public var healthBar:Sprite = new Sprite
+		//The health bar
+		public var healthBar:Sprite = new Sprite		
+		//Text Fields
 		public var scoreText:TextField = new TextField
 		public var hightScoreText:TextField = new TextField
+		public var gameOverText:TextField = new TextField
+		//Scores
 		public var score:int = 0
 		public var highScore:int = 0
-		
-		
+		//Counters to measure how many frames have passed
+			//1 frame = (1/30) seconds; because were running at 30 fps
 		public var counter:int = 0
 		public var enemyCounter:int = 0
 		public var bulletCounter:int = 0
+		//How often Enemies pop up (in frames)
+			//defaults at every 3 seconds and slowly decreases
 		public var enemyFreq = 90
 		
 		public var fullScreen:Boolean = true
 		
-		public var gameOverText:TextField = new TextField
 		
 		
+		//Counts down the time between the game ending and starting again
+			//if its -1 then the game is running; When it hits 0 the game restarts
 		public var gameOverCount:int = -1
 		
+		
+		//////////////////////
+		////Functions/////////
+		//////////////////
 		
 		public function Main():void 
 		{
 			if (stage) init();
 			else addEventListener(Event.ADDED_TO_STAGE, init);
 			
-			stageRef = stage
-			
+			//start the program in Full Screan
 			stage.displayState = StageDisplayState.FULL_SCREEN
 			
 		}
 		
+		//Add stuff to stage; give it a postion; set up events
 		private function init(e:Event = null):void 
 		{
 			removeEventListener(Event.ADDED_TO_STAGE, init);
@@ -102,7 +123,8 @@ package
 		
 		public function loop(e:Event = null):void {
 			
-			if(turret.health > 0){
+			if (turret.health > 0) {
+				//Make the turret follow the mouse
 				var vecRX:Number = mouseX - centerX
 				var vecRY:Number = mouseY - centerY
 				
@@ -113,45 +135,48 @@ package
 				turret.rotation = rot
 				
 				
-				
+				//Allow the player to shoot at 6 bullets per second if mouse is held down
 				if (mouseIsDown && Number(bulletCounter)/5 == int(bulletCounter/5)){
 					shoot()
 				}
 			}
 			
 			
-			
+			//Integrate every object with a velocity (enemies/bullets)
 			for (var i:int = 0; i < physItemsL; i++) {
 				var item:PhysItem = physItems[i]
 				item.x += item.vx
 				item.y += item.vy
 			}
 			
+			//Brute force test each bullet against each enemy
 			for (var i:int = 0; i < bulletsL; i++) {
 				var bullet:Bullet = bullets[i]
 				for (var j:int = 0; j < enemiesL; j++) {
 					var enemy:Enemy = enemies[j]
+					//If it hits damage the enemy and remove the bullet
 					if (enemy.hitTestObject(bullet)) {
 						enemy.health -= 20
 						removeBullet(bullet)
 					}
 				}
-				if (bullet.x * bullet.x + bullet.y * bullet.y > 1200000) {
-					//trace(bullet.x * bullet.x + bullet.y * bullet.y)
+				//Get rid of the bullet if it gets far enough away
+				if (bullet.x * bullet.x + bullet.y * bullet.y > 1200000) {					
 					removeBullet(bullet)
 				}
 				
 			}
-			
+			//Loop through enemies
 			for (var i:int = 0; i < enemiesL; i++) {
 				var enemy:Enemy = enemies[i]
-				
+				//Decide if it should be dead
 				if (enemy.health < 0) {
 					if (enemy.count == 1) {
 						score += 20
 						enemy.Die()
 					}
-					
+				//Otherwise test if it hits the turret
+				//If it does kill it and make the turret take damage
 				}else {
 					if (enemy.hitTestObject(turret)) {
 						if (enemy.count == 1) {
@@ -162,9 +187,12 @@ package
 						
 					}
 				}
+				//Test if the enemey is dead
+				//If so run Die() so that the explosion animation can finish
 				if (enemy.count > 1) {
 					enemy.Die()
 				}
+				//If the animation is done remove the enemy
 				if (enemy.remove) {
 					stage.removeChild(enemy)
 					enemies.splice(enemies.indexOf(enemy), 1)
@@ -175,16 +203,19 @@ package
 			}
 			
 			
-			
+			//Iterate all counters 
 			counter++
 			enemyCounter++
 			bulletCounter++
 			
+			//Reduce enemyFreq making the enemies come faster
 			if (counter >= 150) {
 				counter = 0
 				enemyFreq -= 10
 			}
 			
+			//Test if it is time to make an enemy come
+			//If so make one at a random angle and send it at the turret
 			if (enemyCounter >= enemyFreq) {
 				enemyCounter = 0
 				var enemy:Enemy = new Enemy;
@@ -200,9 +231,11 @@ package
 				physItems[physItemsL++] = enemy
 				enemies[enemiesL++] = enemy
 			}
+			//Update the text fields
 			scoreText.text = 		"Score:			" + String(score)
 			hightScoreText.text = 	"HighScore:	" + String(highScore)
 			
+			//Update the Health bar
 			var dimX:Number = 200*(turret.health / 100)
 			if(dimX < 0) dimX = 0
 			healthBar.graphics.clear()
@@ -211,9 +244,11 @@ package
 			
 			
 		
-			
+			//See if the score is higher than the highScore
 			if(score > highScore) highScore = score
 			
+			//See if the turret is dead
+			//If so start the game over sequence
 			if (turret.health <= 0) {
 				if (gameOverCount == -1) {
 					gameOverCount = 150
@@ -234,6 +269,7 @@ package
 			}
 		}
 		
+		//Handle the shooting/mouse presses
 		public function mouseDown(e:MouseEvent = null):void {
 			mouseIsDown = true
 			shoot()
@@ -244,6 +280,7 @@ package
 			
 		}
 		
+		//Remove bullets from the stage and from respective lists
 		public function removeBullet(bullet:Bullet) {
 			stage.removeChild(bullet)
 			bullets.splice(bullets.indexOf(bullet), 1)
@@ -252,14 +289,20 @@ package
 			physItemsL--
 		}
 		
+		//Fires 1 bullet
 		public function shoot():void {
+			//The vector from the center of the screen to the mouse
 			var VX:Number = mouseX - centerX
-			var VY:Number = mouseY - centerY
+			var VY:Number = mouseY - centerY			
+			//Normalize the vector (make the magnitude 1)
 			var dist:Number = VX * VX + VY * VY
 			dist = Math.sqrt(dist)
 			VX /= dist
 			VY /= dist
 			
+			//Make a new bullet 
+			//Make it's velocity and position relative the the direction of
+			//the mouse
 			var b:Bullet = new Bullet
 			b.x = centerX + VX * 10
 			b.y = centerY + VY * 10
@@ -270,6 +313,7 @@ package
 			bullets[bulletsL++] = b
 		}
 		
+		//Resets the game back to its start conditions
 		public function reset():void {
 			stage.removeChild(gameOverText)
 			score = 0
@@ -292,9 +336,11 @@ package
 			
 			turret.health = 100
 		}
+		
+		//Handler for the key press event
 		public function keyDown(e:KeyboardEvent = null) {			
 			if (e.keyCode == 32 || e.keyCode == Keyboard.ESCAPE) {
-				trace("SHIT HAPPENED")
+				//Toggles full screen if space is pressed
 				if(fullScreen){
 					stage.displayState = StageDisplayState.NORMAL
 					fullScreen = false
